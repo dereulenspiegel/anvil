@@ -8,7 +8,7 @@ type Status struct {
 	State    string
 }
 
-func (v *Vagrant) Status(instanceName string) (*Status, error) {
+func (v *Vagrant) Status(instanceName string) ([]*Status, error) {
 	params := make([]string, 1, 2)
 	params[0] = "status"
 	if instanceName != "" {
@@ -21,13 +21,18 @@ func (v *Vagrant) Status(instanceName string) (*Status, error) {
 	if len(out.Targets()) > 1 {
 		return nil, fmt.Errorf("Trying to get status of multiple targtes")
 	}
-	provider := out.GetData(instanceName, PROVIDER_NAME)
-	state := out.GetData(instanceName, STATE)
-	name := out.Targets()[0]
-	status := &Status{
-		Provider: provider,
-		State:    state,
-		Name:     name,
+
+	instanceNames := out.Targets()
+	statusSlice := make([]*Status, 0, len(instanceNames))
+	for _, name := range instanceNames {
+		provider := out.GetData(name, PROVIDER_NAME)
+		state := out.GetData(name, STATE)
+		status := &Status{
+			Name:     name,
+			State:    state,
+			Provider: provider,
+		}
+		statusSlice = append(statusSlice, status)
 	}
-	return status, nil
+	return statusSlice, nil
 }
