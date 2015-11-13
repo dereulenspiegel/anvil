@@ -30,8 +30,7 @@ func getVagrant(instanceName string) *vagrant.Vagrant {
 	return vagrant.NewVagrant(workdir)
 }
 
-type VagrantDriver struct {
-}
+type VagrantDriver struct{}
 
 func convertSshConfig(cfg *vagrant.SshConfig) apis.Connection {
 	connection := apis.Connection{}
