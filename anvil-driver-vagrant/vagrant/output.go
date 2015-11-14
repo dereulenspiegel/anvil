@@ -2,6 +2,7 @@ package vagrant
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,10 @@ const (
 	STATE_HUMAN_LONG  MessageType = "state-human-long"
 	STATE_HUMAN_SHORT MessageType = "state-human-short"
 	SSH_CONFIG        MessageType = "ssh-config"
+)
+
+var (
+	lineRegexp = regexp.MustCompile(`^([\d]+),([\w\d]*),([\w\d\-]+),(?s:(.*))$`)
 )
 
 type OutputLine struct {
@@ -72,19 +77,19 @@ func (o Output) Targets() []string {
 }
 
 func ParseOutputMessage(line string) (OutputLine, error) {
-	parts := strings.Split(line, ",")
-	if len(parts) != 4 {
-		return OutputLine{}, fmt.Errorf("Unparseable line %s", line)
+	if !lineRegexp.MatchString(line) {
+		return OutputLine{}, fmt.Errorf("Regexp: Unparseable line: %s", line)
 	}
-	intTime, err := strconv.ParseInt(parts[0], 10, 64)
+	submatches := lineRegexp.FindAllStringSubmatch(line, -1)
+	intTime, err := strconv.ParseInt(submatches[0][1], 10, 64)
 	if err != nil {
-		return OutputLine{}, fmt.Errorf("Unparseable timestamp %s: %v", parts[0], err)
+		return OutputLine{}, fmt.Errorf("Unparseable timestamp %s: %v", submatches[0][1], err)
 	}
-	data := strings.Replace(parts[3], "%!(VAGRANT_COMMA)", ",", -1)
+	data := strings.Replace(submatches[0][4], "%!(VAGRANT_COMMA)", ",", -1)
 	outputLine := OutputLine{
 		Timestamp: time.Unix(intTime, 0),
-		Target:    parts[1],
-		Type:      MessageType(parts[2]),
+		Target:    submatches[0][2],
+		Type:      MessageType(submatches[0][3]),
 		Data:      data,
 	}
 	return outputLine, nil
