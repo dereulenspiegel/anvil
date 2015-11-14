@@ -2,7 +2,6 @@ package vagrant
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -24,7 +23,6 @@ func NewVagrant(workdir string) *Vagrant {
 func (v *Vagrant) runCommand(params []string) (Output, error) {
 	params = append(params, "--machine-readable")
 	cmd := exec.Command("vagrant", params...)
-	os.Stderr.WriteString(fmt.Sprintf("Executing: vagrant %v\n", params))
 	if v.Workdir != "" {
 		cmd.Dir = v.Workdir
 	}
