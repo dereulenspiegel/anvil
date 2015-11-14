@@ -13,6 +13,7 @@ var (
 		"1447091727,node01,state-human-short,not created",
 		"1447091727,node01,state-human-long,The environment has not yet been created. Run `vagrant up` to\ncreate the environment. If a machine is not created%!(VAGRANT_COMMA) only the\ndefault provider will be shown. So if a provider is not listed%!(VAGRANT_COMMA)\nthen the machine is not created for that environment.",
 		"1447416672,,error-exit,Vagrant::Errors::VagrantfileExistsError,`Vagrantfile` already exists in this directory. Remove it before\nrunning `vagrant init`.",
+		`1447520089,,error-exit,Vagrant::Errors::BoxMetadataFileNotFound,The "metadata.json" file for the box 'ubuntu/trusty64' was not found.\nBoxes require this file in order for Vagrant to determine the\nprovider it was made for. If you made the box%!(VAGRANT_COMMA) please add a\n"metadata.json" file to it. If someone else made the box%!(VAGRANT_COMMA) please\nnotify the box creator that the box is corrupt. Documentation for\nbox file format can be found at the URL below:\n\nhttp://docs.vagrantup.com/v2/boxes/format.html`,
 	}
 	invalidLines = []string{
 		"node01,provider-name,virtualbox",
@@ -46,6 +47,12 @@ func TestValidOutputMessageParsing(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal("", out.Target)
 	assert.Equal(ERROR_EXIT, out.Type)
+
+	out, err = ParseOutputMessage(validLines[5])
+	assert.Nil(err)
+	assert.Equal("", out.Target)
+	assert.Equal(ERROR_EXIT, out.Type)
+	assert.Equal(`Vagrant::Errors::BoxMetadataFileNotFound,The "metadata.json" file for the box 'ubuntu/trusty64' was not found.\nBoxes require this file in order for Vagrant to determine the\nprovider it was made for. If you made the box, please add a\n"metadata.json" file to it. If someone else made the box, please\nnotify the box creator that the box is corrupt. Documentation for\nbox file format can be found at the URL below:\n\nhttp://docs.vagrantup.com/v2/boxes/format.html`, out.Data)
 }
 
 func TestInvalidOutputMessageParsing(t *testing.T) {

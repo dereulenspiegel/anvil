@@ -2,6 +2,7 @@ package vagrant
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -20,52 +21,10 @@ func NewVagrant(workdir string) *Vagrant {
 	return &Vagrant{workdir}
 }
 
-func (v *Vagrant) Init(opts InitOptions) error {
-	out, err := v.runCommand([]string{"init", "-m", opts.Name, opts.Url})
-	if err != nil {
-		return err
-	}
-	if outErr := out.Error(); outErr != nil {
-		return fmt.Errorf("Error initializing the machine: %s", outErr.Data)
-	}
-	return nil
-}
-
-func (v *Vagrant) Up(machineName string) error {
-	params := make([]string, 1, 2)
-	params[0] = "up"
-	if machineName != "" {
-		params = append(params, machineName)
-	}
-	out, err := v.runCommand(params)
-	if err != nil {
-		return err
-	}
-	if outErr := out.Error(); outErr != nil {
-		return fmt.Errorf("Error halting the machine: %s", outErr.Data)
-	}
-	return nil
-}
-
-func (v *Vagrant) Halt(machineName string) error {
-	params := make([]string, 1, 2)
-	params[0] = "up"
-	if machineName != "" {
-		params = append(params, machineName)
-	}
-	out, err := v.runCommand(params)
-	if err != nil {
-		return err
-	}
-	if outErr := out.Error(); outErr != nil {
-		return fmt.Errorf("Error halting the machine: %s", outErr.Data)
-	}
-	return nil
-}
-
 func (v *Vagrant) runCommand(params []string) (Output, error) {
 	params = append(params, "--machine-readable")
 	cmd := exec.Command("vagrant", params...)
+	os.Stderr.WriteString(fmt.Sprintf("Executing: vagrant %v\n", params))
 	if v.Workdir != "" {
 		cmd.Dir = v.Workdir
 	}
@@ -88,11 +47,16 @@ func (v *Vagrant) runCommand(params []string) (Output, error) {
 	outputLines := make(Output, 0, len(lines))
 
 	for _, line := range lines {
-		msg, err := ParseOutputMessage(line)
-		if err != nil {
-			return nil, err
+		if len(line) > 0 {
+			msg, err := ParseOutputMessage(line)
+			if err != nil {
+				return nil, err
+			}
+			outputLines = append(outputLines, msg)
 		}
-		outputLines = append(outputLines, msg)
+	}
+	if outErr := outputLines.Error(); outErr != nil {
+		return outputLines, fmt.Errorf("Vagrant error: %s", outErr.Data)
 	}
 	return outputLines, err
 }
