@@ -35,7 +35,7 @@ func parseSshConfig(in string) (*SshConfig, error) {
 
 func (v *Vagrant) SshConfig(machineName string) (*SshConfig, error) {
 	params := make([]string, 1, 2)
-	params[0] = "status"
+	params[0] = "ssh-config"
 	if machineName != "" {
 		params = append(params, machineName)
 	}
