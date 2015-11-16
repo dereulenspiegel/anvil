@@ -61,7 +61,20 @@ func (v *VagrantDriver) Init(options map[string]interface{}) error {
 }
 
 func (v *VagrantDriver) CreateInstance(name string, options map[string]interface{}) (apis.Instance, error) {
+	os.Stderr.WriteString(fmt.Sprintf("[Vagrant Driver] Create instance %s called with options %v\n", name, options))
 	vagrantClient := getVagrant(name)
+	if util.FileExists(path.Join(DefaultAnvilFolder, DefaultVargantSubfolder, name, "Vagrantfile")) {
+		os.Stderr.WriteString("Instance already exists...")
+		status, err := vagrantClient.Status("")
+		if err != nil {
+			return apis.Instance{}, err
+		}
+		instance, err := addSshConfig(vagrantClient, &apis.Instance{Name: name, State: statusMap[status[0].State]})
+		if err != nil {
+			return apis.Instance{}, err
+		}
+		return *instance, err
+	}
 	vagrantOpts := vagrant.InitOptions{}
 	boxName, exists := options["box"].(string)
 	if exists {
@@ -73,14 +86,18 @@ func (v *VagrantDriver) CreateInstance(name string, options map[string]interface
 	}
 	var err error
 	err = vagrantClient.Init(vagrantOpts)
-	os.Stderr.WriteString(fmt.Sprintf("[Vagrant Driver] Create instance %s called with options %v\n", name, options))
 	return apis.Instance{Name: name, State: apis.CREATED}, err
 }
 
 func (v *VagrantDriver) StartInstance(name string) (apis.Instance, error) {
+	os.Stderr.WriteString(fmt.Sprintf("[Vagrant Driver] Start instance %s called\n", name))
 	vagrantClient := getVagrant(name)
 	err := vagrantClient.Up("")
-	os.Stderr.WriteString(fmt.Sprintf("[Vagrant Driver] Start instance %s called\n", name))
+	for status, err := vagrantClient.Status(""); len(status) == 0 && status[0].State != "running" && err == nil; {
+		if err != nil {
+			return apis.Instance{}, err
+		}
+	}
 	instance, err := addSshConfig(vagrantClient, &apis.Instance{Name: name, State: apis.STARTED})
 	if err != nil {
 		return apis.Instance{}, err
@@ -142,10 +159,16 @@ func (v *VagrantDriver) ListInstances() ([]apis.Instance, error) {
 }
 
 func (v *VagrantDriver) UpdateState(name string) (apis.Instance, error) {
+	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Updating state of %s\n", name))
+	if !util.FileExists(path.Join(DefaultAnvilFolder, DefaultVargantSubfolder, name, "Vagrantfile")) {
+		return apis.Instance{Name: name, State: apis.DESTROYED}, nil
+	}
 	vagrantClient := getVagrant(name)
 	status, err := vagrantClient.Status("")
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Updating state of %s\n", name))
-	instance, err := addSshConfig(vagrantClient, &apis.Instance{Name: status[0].Name, State: statusMap[status[0].State]})
+	if len(status) == 0 {
+		return apis.Instance{Name: name, State: apis.DESTROYED}, nil
+	}
+	instance, err := addSshConfig(vagrantClient, &apis.Instance{Name: name, State: statusMap[status[0].State]})
 	if err != nil {
 		return apis.Instance{}, err
 	}
