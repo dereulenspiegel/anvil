@@ -47,7 +47,7 @@ func NewTestCase(platform *config.PlatformConfig, suite *config.SuiteConfig) *Te
 	}
 	machine := fsm.New(fsm.WithRules(createTestCaseRules()), fsm.WithSubject(testCase))
 	testCase.machine = machine
-
+	testCase.LoadState()
 	testCase.driver = plugin.LoadDriver(config.Cfg.Driver.Name)
 	instance, err := testCase.driver.UpdateState(testCase.Name)
 	if err == nil {
@@ -62,8 +62,9 @@ func NewTestCase(platform *config.PlatformConfig, suite *config.SuiteConfig) *Te
 }
 
 func (t *TestCase) Transition(s fsm.State) error {
+	log.Printf("Transitioning from state %s to state %s", t.State, s)
 	var err error
-	t.machine.Transition(s)
+	err = t.machine.Transition(s)
 	return err
 }
 
@@ -85,16 +86,17 @@ func (t *TestCase) SetState(s fsm.State) {
 }
 
 func (t *TestCase) setup() {
+	log.Printf("Creating instance....")
 	instance, err := t.driver.CreateInstance(t.Name, t.platform.Driver)
 	if err != nil {
-		// TODO show an error or something
+		log.Printf("[ERROR]: Creating instance failed: %v", err)
 		return
 	}
 	t.Instance = instance
-
+	log.Printf("Starting instance...")
 	instance, err = t.driver.StartInstance(instance.Name)
 	if err != nil {
-		// TODO error handling
+		log.Printf("[ERROR]: Starting instance failed: %v", err)
 		return
 	}
 	t.Instance = instance
@@ -110,6 +112,7 @@ func (t *TestCase) verify() {
 }
 
 func (t *TestCase) destroy() {
+	log.Printf("Destroying instance %s", t.Instance.Name)
 	instance, err := t.driver.DestroyInstance(t.Instance.Name)
 	if err != nil {
 		log.Panicf("Can't destroy instance %s", t.Instance.Name)
