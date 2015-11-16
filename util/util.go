@@ -5,13 +5,13 @@ import (
 )
 
 func CreateDirectoryIfNotExists(path string) error {
-	if !DirectoryExists(path) {
+	if !FileExists(path) {
 		return os.MkdirAll(path, 0766)
 	}
 	return nil
 }
 
-func DirectoryExists(path string) bool {
+func FileExists(path string) bool {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
