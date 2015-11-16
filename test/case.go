@@ -52,7 +52,7 @@ func NewTestCase(platform *config.PlatformConfig, suite *config.SuiteConfig) *Te
 	instance, err := testCase.driver.UpdateState(testCase.Name)
 	if err == nil {
 		testCase.Instance = instance
-		if instance.State == apis.STARTED {
+		if instance.State == apis.STARTED && testCase.State != PROVISIONED && testCase.State != VERIFIED {
 			testCase.State = SETUP
 		}
 	} else {
