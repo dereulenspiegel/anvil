@@ -17,13 +17,12 @@ func SubCommand() cli.Command {
 	return cli.Command{
 		Name:   "destroy",
 		Usage:  "destroy [regexp]",
-		Action: destroyAction,
+		Action: commands.AnvilAction(destroyAction),
 	}
 }
 
-func destroyAction(ctx *cli.Context) {
-	filteredCases := commands.GetTestCases(ctx)
-	for _, testCase := range filteredCases {
+func destroyAction(testCases []*test.TestCase, ctx *cli.Context) {
+	for _, testCase := range testCases {
 		err := testCase.Transition(test.DESTROYED)
 		if err != nil {
 			commands.Error(err)

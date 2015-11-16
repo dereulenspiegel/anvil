@@ -1,12 +1,14 @@
-package setup
+package status
 
 import (
+	"fmt"
+
 	"github.com/codegangsta/cli"
 	"github.com/dereulenspiegel/anvil/commands"
 	"github.com/dereulenspiegel/anvil/test"
 )
 
-type SetupCommand struct {
+type StatusCommand struct {
 }
 
 func BuildCommand(app *cli.App) {
@@ -15,17 +17,14 @@ func BuildCommand(app *cli.App) {
 
 func SubCommand() cli.Command {
 	return cli.Command{
-		Name:   "setup",
-		Usage:  "setup [regexp]",
-		Action: commands.AnvilAction(setupAction),
+		Name:   "status",
+		Usage:  "status [regexp]",
+		Action: commands.AnvilAction(statusAction),
 	}
 }
 
-func setupAction(testCases []*test.TestCase, ctx *cli.Context) {
+func statusAction(testCases []*test.TestCase, ctx *cli.Context) {
 	for _, testCase := range testCases {
-		err := testCase.Transition(test.SETUP)
-		if err != nil {
-			commands.Error(err)
-		}
+		fmt.Printf("%s \t %s", testCase.Name, testCase.CurrentState())
 	}
 }

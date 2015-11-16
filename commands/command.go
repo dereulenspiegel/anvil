@@ -9,11 +9,17 @@ import (
 	"github.com/dereulenspiegel/anvil/test"
 )
 
-type CliCommand interface {
-	SubCommand() cli.Command
-}
+type AnvilCommand func(cases []*test.TestCase, ctx *cli.Context)
 
-type BuildCliCommand func() *CliCommand
+func AnvilAction(command AnvilCommand) func(*cli.Context) {
+	return func(ctx *cli.Context) {
+		testCases := GetTestCases(ctx)
+		command(testCases, ctx)
+		for _, tc := range testCases {
+			tc.PersistState()
+		}
+	}
+}
 
 func FilterTestCases(in []*test.TestCase, expression string) []*test.TestCase {
 	caseMatcher := regexp.MustCompile(expression)
