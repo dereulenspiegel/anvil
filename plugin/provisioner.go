@@ -23,9 +23,10 @@ func (p *ProvisionerPlugin) call(method string, args interface{}, reply interfac
 	return p.rpcClient.Call(fmt.Sprintf("Provisioner.%s", method), args, reply)
 }
 
-func (p *ProvisionerPlugin) Provision(inst apis.Instance) error {
+func (p *ProvisionerPlugin) Provision(inst apis.Instance, opts map[string]interface{}) error {
 	return p.call("Provision", apis.RpcParams{
 		"instance": inst,
+		"opts":     opts,
 	}, nil)
 }
 

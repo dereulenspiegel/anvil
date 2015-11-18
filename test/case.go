@@ -63,6 +63,7 @@ func NewTestCase(platform *config.PlatformConfig, suite *config.SuiteConfig) *Te
 
 func (t *TestCase) Transition(s fsm.State) error {
 	log.Printf("Transitioning from state %s to state %s", t.State, s)
+	// TODO Allow to "jump" between states
 	var err error
 	err = t.machine.Transition(s)
 	return err

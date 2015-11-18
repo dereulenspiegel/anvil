@@ -7,7 +7,7 @@ import (
 )
 
 type Provisioner interface {
-	Provision(inst Instance) error
+	Provision(inst Instance, opts map[string]interface{}) error
 }
 
 type ProvisonerWrapper struct {
@@ -16,8 +16,9 @@ type ProvisonerWrapper struct {
 
 func (p *ProvisonerWrapper) Provision(params RpcParams, result *string) error {
 	inst := params["instance"].(Instance)
+	opts := params["opts"].(map[string]interface{})
 	result = nil
-	return p.impl.Provision(inst)
+	return p.impl.Provision(inst, opts)
 }
 
 func RegisterProvisionerPlugin(provisioner Provisioner) error {
