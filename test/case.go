@@ -40,6 +40,7 @@ type TestCase struct {
 	driver      *plugin.DriverPlugin
 	provisioner *plugin.ProvisionerPlugin
 	Instance    apis.Instance
+	lastError   error
 }
 
 func CompileTestCasesFromConfig(cfg *config.Config) []*TestCase {
@@ -77,9 +78,26 @@ func NewTestCase(platform *config.PlatformConfig, suite *config.SuiteConfig) *Te
 }
 
 func (t *TestCase) Transition(s fsm.State) error {
-	log.Printf("Transitioning from state %s to state %s", t.State, s)
-	if s == DESTROYED {
-		return t.machine.Transition(DESTROYED)
+	// Allow destruction in all states
+	t.lastError = nil
+	if s == DESTROYED && t.State != DESTROYED {
+		err := t.machine.Transition(DESTROYED)
+		if err != nil {
+			return err
+		}
+		if t.lastError != nil {
+			return t.lastError
+		}
+	}
+	// Allow reprovisioning
+	if s == PROVISIONED && t.State == PROVISIONED {
+		err := t.machine.Transition(PROVISIONED)
+		if err != nil {
+			return err
+		}
+		if t.lastError != nil {
+			return t.lastError
+		}
 	}
 	currStateIndex := stateIndex(t.State)
 	nextStateIndex := stateIndex(s)
@@ -87,9 +105,13 @@ func (t *TestCase) Transition(s fsm.State) error {
 		log.Panicf("Either %s or %s are unknown states", t.State, s)
 	}
 	for i := currStateIndex + 1; i <= nextStateIndex; i++ {
+		t.lastError = nil
 		err := t.machine.Transition(orderedStateList[i])
 		if err != nil {
 			return err
+		}
+		if t.lastError != nil {
+			return t.lastError
 		}
 	}
 	/*var err error
@@ -116,17 +138,17 @@ func (t *TestCase) SetState(s fsm.State) {
 }
 
 func (t *TestCase) setup() {
-	log.Printf("Creating instance....")
 	instance, err := t.driver.CreateInstance(t.Name, t.platform.Driver)
 	if err != nil {
-		log.Printf("[ERROR]: Creating instance failed: %v", err)
+		t.lastError = err
+		t.State = FAILED
 		return
 	}
 	t.Instance = instance
-	log.Printf("Starting instance...")
 	instance, err = t.driver.StartInstance(instance.Name)
 	if err != nil {
-		log.Printf("[ERROR]: Starting instance failed: %v", err)
+		t.State = FAILED
+		t.lastError = err
 		return
 	}
 	t.Instance = instance
@@ -136,19 +158,24 @@ func (t *TestCase) setup() {
 func (t *TestCase) provision() {
 	err := t.provisioner.Provision(t.Instance, t.suite.Provisioner)
 	if err != nil {
-		log.Fatalf("Error running provisioning: %v", err)
+		t.State = FAILED
+		t.lastError = err
 	}
 	t.State = PROVISIONED
 }
 
 func (t *TestCase) verify() {
-	t.State = VERIFIED
+
+	// Not implemented yet
+	t.State = FAILED
 }
 
 func (t *TestCase) destroy() {
 	log.Printf("Destroying instance %s", t.Instance.Name)
 	instance, err := t.driver.DestroyInstance(t.Instance.Name)
 	if err != nil {
+		t.lastError = err
+		// TODO Fail or continue with other instances?
 		log.Panicf("Can't destroy instance %s", t.Instance.Name)
 	}
 	t.Instance = instance
