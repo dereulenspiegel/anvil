@@ -3,11 +3,19 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path"
 
 	"github.com/dereulenspiegel/anvil/plugin/apis"
+	"github.com/dereulenspiegel/anvil/util"
+)
+
+var (
+	DefaultAnvilFolder      = ".anvil"
+	DefaultAnsibleSubfolder = "ansible"
 )
 
 type AnsibleProvisioner struct{}
@@ -29,9 +37,9 @@ func (a *AnsibleProvisioner) Provision(inst apis.Instance, opts map[string]inter
 
 var (
 	mappedSshParams = map[string]string{
-		"HostName":     "ansible_host",
-		"Port":         "ansible_port",
-		"User":         "ansible_user",
+		"HostName":     "ansible_ssh_host",
+		"Port":         "ansible_ssh_port",
+		"User":         "ansible_ssh_user",
 		"IdentityFile": "ansible_ssh_private_key_file",
 	}
 )
@@ -46,15 +54,31 @@ func generateInventory(inst apis.Instance) (string, error) {
 		hostname = "default"
 	}
 	buffer.WriteString(hostname)
-	buffer.WriteString(" ")
+	buffer.WriteString("    ")
 	for key, value := range inst.Connection.Config {
-		ansible_key, mapped := mappedSshParams[key]
+		ansibleKey, mapped := mappedSshParams[key]
 		if mapped {
-			buffer.WriteString(fmt.Sprintf("%s=%s ", ansible_key, value))
+			buffer.WriteString(fmt.Sprintf("%s=%s    ", ansibleKey, value))
 		}
 	}
-	buffer.WriteString(",")
-	return buffer.String(), nil
+	buffer.WriteString("\n")
+
+	err := util.CreateDirectoryIfNotExists(path.Join(DefaultAnvilFolder, DefaultAnsibleSubfolder))
+	if err != nil {
+		return "", err
+	}
+	tempFile, err := ioutil.TempFile(path.Join(DefaultAnvilFolder, DefaultAnsibleSubfolder), "ansible_inventory")
+	if err != nil {
+		return "", err
+	}
+	tempFile.Write(buffer.Bytes())
+	if err := tempFile.Sync(); err != nil {
+		return "", err
+	}
+	if err := tempFile.Close(); err != nil {
+		return "", err
+	}
+	return tempFile.Name(), nil
 }
 
 func generateExtraVars(extraVars map[string]string) string {
@@ -62,7 +86,7 @@ func generateExtraVars(extraVars map[string]string) string {
 		return ""
 	}
 	var buffer bytes.Buffer
-	buffer.WriteString("-e=\"")
+	buffer.WriteString("\"")
 	for key, value := range extraVars {
 		buffer.WriteString(fmt.Sprintf("%s=%s ", key, value))
 	}
@@ -76,31 +100,24 @@ func runAnsible(inst apis.Instance, playbook string, extraVars map[string]string
 	if err != nil {
 		return err
 	}
-	ansibleCmd := exec.Command("ansible-playbook", extraVarsParam, fmt.Sprintf("-i \"%s\"", inventory), playbook)
+	defer os.Remove(inventory)
+
+	params := make([]string, 0, 10)
+	params = append(params, "-i")
+	params = append(params, inventory)
+	params = append(params, "-vvvv")
+	if len(extraVars) > 0 {
+		params = append(params, "-e")
+		params = append(params, extraVarsParam)
+	}
+	params = append(params, playbook)
+	ansibleCmd := exec.Command("ansible-playbook", params...)
 	if ansibleCfgPath != "" {
 		ansibleCmd.Env = append(ansibleCmd.Env, fmt.Sprintf("ANSIBLE_CONFIG=%s", ansibleCfgPath))
 	}
-	stderr, err := ansibleCmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("Can't connect to ansibles stderr")
-	}
-	stdout, err := ansibleCmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("Can't connect to ansibles stdout")
-	}
-	go func() {
-		buffer := make([]byte, 0, 1024)
-		for n, err := stderr.Read(buffer); err != nil; {
-			os.Stderr.Write(buffer[:n])
-		}
-	}()
-
-	go func() {
-		buffer := make([]byte, 0, 1024)
-		for n, err := stdout.Read(buffer); err != nil; {
-			os.Stderr.Write(buffer[:n])
-		}
-	}()
+	apis.Logf("Command: %v", *ansibleCmd)
+	ansibleCmd.Stderr = os.Stderr
+	ansibleCmd.Stdout = os.Stderr
 	err = ansibleCmd.Start()
 	if err != nil {
 		return err

@@ -14,11 +14,14 @@ type ProvisonerWrapper struct {
 	impl Provisioner
 }
 
-func (p *ProvisonerWrapper) Provision(params RpcParams, result *string) error {
-	inst := params["instance"].(Instance)
-	opts := params["opts"].(map[string]interface{})
+type ProvisionerParams struct {
+	Inst Instance
+	Opts map[string]interface{}
+}
+
+func (p *ProvisonerWrapper) Provision(params ProvisionerParams, result *string) error {
 	result = nil
-	return p.impl.Provision(inst, opts)
+	return p.impl.Provision(params.Inst, params.Opts)
 }
 
 func RegisterProvisionerPlugin(provisioner Provisioner) error {

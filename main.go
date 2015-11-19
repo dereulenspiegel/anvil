@@ -5,6 +5,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/dereulenspiegel/anvil/commands/destroy"
+	"github.com/dereulenspiegel/anvil/commands/provision"
 	"github.com/dereulenspiegel/anvil/commands/setup"
 	"github.com/dereulenspiegel/anvil/commands/status"
 	"github.com/dereulenspiegel/anvil/config"
@@ -31,6 +32,7 @@ func createSubCommands(app *cli.App) {
 	setup.BuildCommand(app)
 	destroy.BuildCommand(app)
 	status.BuildCommand(app)
+	provision.BuildCommand(app)
 }
 
 func before(ctx *cli.Context) error {

@@ -11,16 +11,10 @@ type DriverPluginResults struct {
 	DriverInstance Instance
 }
 
-type Log struct{}
-
-func NewLog() *Log {
-	return &Log{}
+func Log(message string) {
+	os.Stderr.WriteString(message + "\n")
 }
 
-func (l *Log) PrintString(in string) {
-	os.Stderr.WriteString(in)
-}
-
-func (l *Log) Printf(in string, args ...interface{}) {
-	os.Stderr.WriteString(fmt.Sprintf(in, args))
+func Logf(message string, params ...interface{}) {
+	os.Stderr.WriteString(fmt.Sprintf(message+"\n", params))
 }

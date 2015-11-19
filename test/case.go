@@ -18,14 +18,28 @@ const (
 	FAILED      fsm.State = "FAILED"
 )
 
+var (
+	orderedStateList = []fsm.State{DESTROYED, SETUP, PROVISIONED, VERIFIED}
+)
+
+func stateIndex(state fsm.State) int {
+	for i, s := range orderedStateList {
+		if s == state {
+			return i
+		}
+	}
+	return -1
+}
+
 type TestCase struct {
-	State    fsm.State
-	platform *config.PlatformConfig
-	suite    *config.SuiteConfig
-	Name     string
-	machine  fsm.Machine
-	driver   *plugin.DriverPlugin
-	Instance apis.Instance
+	State       fsm.State
+	platform    *config.PlatformConfig
+	suite       *config.SuiteConfig
+	Name        string
+	machine     fsm.Machine
+	driver      *plugin.DriverPlugin
+	provisioner *plugin.ProvisionerPlugin
+	Instance    apis.Instance
 }
 
 func CompileTestCasesFromConfig(cfg *config.Config) []*TestCase {
@@ -49,6 +63,7 @@ func NewTestCase(platform *config.PlatformConfig, suite *config.SuiteConfig) *Te
 	testCase.machine = machine
 	testCase.LoadState()
 	testCase.driver = plugin.LoadDriver(config.Cfg.Driver.Name)
+	testCase.provisioner = plugin.LoadProvisioner(config.Cfg.Provisioner.Name)
 	instance, err := testCase.driver.UpdateState(testCase.Name)
 	if err == nil {
 		testCase.Instance = instance
@@ -63,10 +78,24 @@ func NewTestCase(platform *config.PlatformConfig, suite *config.SuiteConfig) *Te
 
 func (t *TestCase) Transition(s fsm.State) error {
 	log.Printf("Transitioning from state %s to state %s", t.State, s)
-	// TODO Allow to "jump" between states
-	var err error
+	if s == DESTROYED {
+		return t.machine.Transition(DESTROYED)
+	}
+	currStateIndex := stateIndex(t.State)
+	nextStateIndex := stateIndex(s)
+	if currStateIndex == -1 || nextStateIndex == -1 {
+		log.Panicf("Either %s or %s are unknown states", t.State, s)
+	}
+	for i := currStateIndex + 1; i <= nextStateIndex; i++ {
+		err := t.machine.Transition(orderedStateList[i])
+		if err != nil {
+			return err
+		}
+	}
+	/*var err error
 	err = t.machine.Transition(s)
-	return err
+	*/
+	return nil
 }
 
 func (t *TestCase) CurrentState() fsm.State {
@@ -105,6 +134,10 @@ func (t *TestCase) setup() {
 }
 
 func (t *TestCase) provision() {
+	err := t.provisioner.Provision(t.Instance, t.suite.Provisioner)
+	if err != nil {
+		log.Fatalf("Error running provisioning: %v", err)
+	}
 	t.State = PROVISIONED
 }
 

@@ -24,9 +24,9 @@ func (p *ProvisionerPlugin) call(method string, args interface{}, reply interfac
 }
 
 func (p *ProvisionerPlugin) Provision(inst apis.Instance, opts map[string]interface{}) error {
-	return p.call("Provision", apis.RpcParams{
-		"instance": inst,
-		"opts":     opts,
+	return p.call("Provision", apis.ProvisionerParams{
+		Inst: inst,
+		Opts: opts,
 	}, nil)
 }
 
