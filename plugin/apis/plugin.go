@@ -7,6 +7,11 @@ import (
 
 type RpcParams map[string]interface{}
 
+var (
+	DefaultAnvilFolder = ".anvil"
+	DefaultTestFolder  = "tests"
+)
+
 type DriverPluginResults struct {
 	DriverInstance Instance
 }

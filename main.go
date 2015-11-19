@@ -8,6 +8,7 @@ import (
 	"github.com/dereulenspiegel/anvil/commands/provision"
 	"github.com/dereulenspiegel/anvil/commands/setup"
 	"github.com/dereulenspiegel/anvil/commands/status"
+	"github.com/dereulenspiegel/anvil/commands/verify"
 	"github.com/dereulenspiegel/anvil/config"
 )
 
@@ -33,6 +34,7 @@ func createSubCommands(app *cli.App) {
 	destroy.BuildCommand(app)
 	status.BuildCommand(app)
 	provision.BuildCommand(app)
+	verify.BuildCommand(app)
 }
 
 func before(ctx *cli.Context) error {

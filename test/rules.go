@@ -21,5 +21,9 @@ func createTestCaseRules() fsm.Ruleset {
 
 	rules.AddTransition(fsm.T{PROVISIONED, SETUP})
 	rules.AddTransition(fsm.T{PROVISIONED, PROVISIONED})
+	rules.AddTransition(fsm.T{VERIFIED, VERIFIED})
+
+	rules.AddTransition(fsm.T{FAILED, VERIFIED})
+	rules.AddTransition(fsm.T{FAILED, PROVISIONED})
 	return rules
 }

@@ -25,10 +25,13 @@ func (d *VerifierPlugin) call(method string, args interface{}, reply interface{}
 
 func (v *VerifierPlugin) Verify(inst apis.Instance) (apis.VerifyResult, error) {
 	result := &apis.VerifyResult{}
-	err := v.call("Verify", apis.RpcParams{
-		"instance": inst,
+	err := v.call("Verify", apis.VerifyParams{
+		Inst: inst,
 	}, result)
-	return *result, err
+	if err != nil {
+		return apis.VerifyResult{}, err
+	}
+	return *result, nil
 }
 
 func LoadVerifier(name string) *VerifierPlugin {

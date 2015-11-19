@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	"github.com/dereulenspiegel/anvil/config"
@@ -68,7 +69,7 @@ func NewTestCase(platform *config.PlatformConfig, suite *config.SuiteConfig) *Te
 	instance, err := testCase.driver.UpdateState(testCase.Name)
 	if err == nil {
 		testCase.Instance = instance
-		if instance.State == apis.STARTED && testCase.State != PROVISIONED && testCase.State != VERIFIED {
+		if instance.State == apis.STARTED && testCase.State == DESTROYED {
 			testCase.State = SETUP
 		}
 	} else {
@@ -88,8 +89,9 @@ func (t *TestCase) Transition(s fsm.State) error {
 		if t.lastError != nil {
 			return t.lastError
 		}
+		return nil
 	}
-	// Allow reprovisioning
+	/*// Allow reprovisioning
 	if s == PROVISIONED && t.State == PROVISIONED {
 		err := t.machine.Transition(PROVISIONED)
 		if err != nil {
@@ -99,10 +101,33 @@ func (t *TestCase) Transition(s fsm.State) error {
 			return t.lastError
 		}
 	}
+
+	if s == VERIFIED && t.State == VERIFIED {
+		err := t.machine.Transition(VERIFIED)
+		if err != nil {
+			return err
+		}
+		if t.lastError != nil {
+			return t.lastError
+		}
+	}*/
 	currStateIndex := stateIndex(t.State)
 	nextStateIndex := stateIndex(s)
-	if currStateIndex == -1 || nextStateIndex == -1 {
-		log.Panicf("Either %s or %s are unknown states", t.State, s)
+	if t.State != FAILED && (currStateIndex == -1 || nextStateIndex == -1) {
+		log.Fatalf("Either %s or %s are unknown states", t.State, s)
+	}
+	if t.State == FAILED {
+		currStateIndex = nextStateIndex
+	}
+	if currStateIndex == nextStateIndex {
+		t.lastError = nil
+		err := t.machine.Transition(s)
+		if err != nil {
+			return err
+		}
+		if t.lastError != nil {
+			return t.lastError
+		}
 	}
 	for i := currStateIndex + 1; i <= nextStateIndex; i++ {
 		t.lastError = nil
@@ -165,9 +190,39 @@ func (t *TestCase) provision() {
 }
 
 func (t *TestCase) verify() {
-
+	files, err := ioutil.ReadDir(apis.DefaultTestFolder)
+	if err != nil {
+		t.State = FAILED
+		t.lastError = err
+		return
+	}
+	for _, file := range files {
+		if file.IsDir() {
+			result, err := t.verifyUsingVerifier(file.Name())
+			if err != nil {
+				t.State = FAILED
+				t.lastError = err
+				return
+			} else {
+				t.printVerifyResult(result)
+			}
+		}
+	}
 	// Not implemented yet
-	t.State = FAILED
+	t.State = VERIFIED
+}
+
+func (t *TestCase) printVerifyResult(result apis.VerifyResult) {
+	resultString := "FAILED"
+	if result.Success {
+		resultString = "SUCCESS"
+	}
+	fmt.Printf("[%s] %s: %s", result.Verifier, resultString, result.Message)
+}
+
+func (t *TestCase) verifyUsingVerifier(name string) (apis.VerifyResult, error) {
+	verifier := plugin.LoadVerifier(name)
+	return verifier.Verify(t.Instance)
 }
 
 func (t *TestCase) destroy() {

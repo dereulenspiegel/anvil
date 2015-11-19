@@ -7,6 +7,9 @@ import (
 )
 
 type VerifyResult struct {
+	Success  bool
+	Verifier string
+	Message  string
 }
 
 type Verifier interface {
@@ -17,15 +20,21 @@ type VerifierWrapper struct {
 	impl Verifier
 }
 
-func (v *VerifierWrapper) Verify(params RpcParams, result *VerifyResult) error {
-	_, err := v.impl.Verify(params["instance"].(Instance))
-	// TODO copy meaningful results to object in result pointer
+type VerifyParams struct {
+	Inst Instance
+}
+
+func (v *VerifierWrapper) Verify(params VerifyParams, result *VerifyResult) error {
+	verifyResult, err := v.impl.Verify(params.Inst)
+	result.Message = verifyResult.Message
+	result.Verifier = verifyResult.Verifier
+	result.Success = verifyResult.Success
 	return err
 }
 
 func RegisterVerifierPlugin(verifier Verifier) error {
 	p := pie.NewProvider()
-	if err := p.RegisterName("Driver", &VerifierWrapper{verifier}); err != nil {
+	if err := p.RegisterName("Verifier", &VerifierWrapper{verifier}); err != nil {
 		return err
 	}
 	p.ServeCodec(jsonrpc.NewServerCodec)
