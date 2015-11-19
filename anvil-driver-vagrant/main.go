@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"path"
 
 	"github.com/dereulenspiegel/anvil/anvil-driver-vagrant/vagrant"
@@ -56,15 +54,12 @@ func addSshConfig(v *vagrant.Vagrant, inst *apis.Instance) (*apis.Instance, erro
 }
 
 func (v *VagrantDriver) Init(options map[string]interface{}) error {
-	os.Stderr.WriteString("[Vagrant Driver] Init called\n")
 	return nil
 }
 
 func (v *VagrantDriver) CreateInstance(name string, options map[string]interface{}) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Vagrant Driver] Create instance %s called with options %v\n", name, options))
 	vagrantClient := getVagrant(name)
 	if util.FileExists(path.Join(DefaultAnvilFolder, DefaultVargantSubfolder, name, "Vagrantfile")) {
-		os.Stderr.WriteString("Instance already exists...")
 		status, err := vagrantClient.Status("")
 		if err != nil {
 			return apis.Instance{}, err
@@ -90,7 +85,6 @@ func (v *VagrantDriver) CreateInstance(name string, options map[string]interface
 }
 
 func (v *VagrantDriver) StartInstance(name string) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Vagrant Driver] Start instance %s called\n", name))
 	vagrantClient := getVagrant(name)
 	err := vagrantClient.Up("")
 	for status, err := vagrantClient.Status(""); len(status) == 0 && status[0].State != "running" && err == nil; {
@@ -106,14 +100,12 @@ func (v *VagrantDriver) StartInstance(name string) (apis.Instance, error) {
 }
 
 func (v *VagrantDriver) StopInstance(name string) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Stop instance %s called\n", name))
 	vagrantClient := getVagrant(name)
 	err := vagrantClient.Halt("")
 	return apis.Instance{Name: name, State: apis.STOPPED}, err
 }
 
 func (v *VagrantDriver) DestroyInstance(name string) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Destroy instance %s called\n", name))
 	vagrantClient := getVagrant(name)
 	err := vagrantClient.Destroy("")
 	return apis.Instance{Name: name, State: apis.DESTROYED}, err
@@ -121,7 +113,6 @@ func (v *VagrantDriver) DestroyInstance(name string) (apis.Instance, error) {
 
 func (v *VagrantDriver) RebootInstance(name string) (apis.Instance, error) {
 	vagrantClient := getVagrant(name)
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Reboot instance %s called\n", name))
 	instance, err := addSshConfig(vagrantClient, &apis.Instance{Name: name, State: apis.STARTED})
 	if err != nil {
 		return apis.Instance{}, err
@@ -130,7 +121,6 @@ func (v *VagrantDriver) RebootInstance(name string) (apis.Instance, error) {
 }
 
 func (v *VagrantDriver) ListInstances() ([]apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] List instances called\n"))
 	instancesPath := path.Join(DefaultAnvilFolder, DefaultVargantSubfolder)
 	fileinfos, err := ioutil.ReadDir(instancesPath)
 	if err != nil {
@@ -159,7 +149,6 @@ func (v *VagrantDriver) ListInstances() ([]apis.Instance, error) {
 }
 
 func (v *VagrantDriver) UpdateState(name string) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Updating state of %s\n", name))
 	if !util.FileExists(path.Join(DefaultAnvilFolder, DefaultVargantSubfolder, name, "Vagrantfile")) {
 		return apis.Instance{Name: name, State: apis.DESTROYED}, nil
 	}
