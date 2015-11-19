@@ -112,10 +112,10 @@ func runAnsible(inst apis.Instance, playbook string, extraVars map[string]string
 	}
 	params = append(params, playbook)
 	ansibleCmd := exec.Command("ansible-playbook", params...)
+	ansibleCmd.Env = append(ansibleCmd.Env, "ANSIBLE_HOST_KEY_CHECKING=False")
 	if ansibleCfgPath != "" {
 		ansibleCmd.Env = append(ansibleCmd.Env, fmt.Sprintf("ANSIBLE_CONFIG=%s", ansibleCfgPath))
 	}
-	apis.Logf("Command: %v", *ansibleCmd)
 	ansibleCmd.Stderr = os.Stderr
 	ansibleCmd.Stdout = os.Stderr
 	err = ansibleCmd.Start()
