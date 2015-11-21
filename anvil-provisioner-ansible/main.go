@@ -14,7 +14,6 @@ import (
 )
 
 var (
-	DefaultAnvilFolder      = ".anvil"
 	DefaultAnsibleSubfolder = "ansible"
 )
 
@@ -63,11 +62,11 @@ func generateInventory(inst apis.Instance) (string, error) {
 	}
 	buffer.WriteString("\n")
 
-	err := util.CreateDirectoryIfNotExists(path.Join(DefaultAnvilFolder, DefaultAnsibleSubfolder))
+	err := util.CreateDirectoryIfNotExists(path.Join(apis.DefaultAnvilFolder, DefaultAnsibleSubfolder))
 	if err != nil {
 		return "", err
 	}
-	tempFile, err := ioutil.TempFile(path.Join(DefaultAnvilFolder, DefaultAnsibleSubfolder), "ansible_inventory")
+	tempFile, err := ioutil.TempFile(path.Join(apis.DefaultAnvilFolder, DefaultAnsibleSubfolder), "ansible_inventory")
 	if err != nil {
 		return "", err
 	}
