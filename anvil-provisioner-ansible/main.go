@@ -28,7 +28,7 @@ func (a *AnsibleProvisioner) Provision(inst apis.Instance, opts map[string]inter
 		ansibleCfg = ""
 	}
 	playbook, exists := opts["playbook"]
-	if !exists {
+	if !exists || playbook == "" {
 		return fmt.Errorf("No playbook specified")
 	}
 	err := runAnsible(inst, playbook.(string), extraVars, ansibleCfg)
