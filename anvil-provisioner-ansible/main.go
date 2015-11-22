@@ -111,6 +111,10 @@ func runAnsible(inst apis.Instance, playbook string, extraVars map[string]string
 	}
 	params = append(params, playbook)
 	ansibleCmd := exec.Command("ansible-playbook", params...)
+	// Copy environment to command environment
+	for _, env := range os.Environ() {
+		ansibleCmd.Env = append(ansibleCmd.Env, env)
+	}
 	ansibleCmd.Env = append(ansibleCmd.Env, "ANSIBLE_HOST_KEY_CHECKING=False")
 	ansibleCmd.Env = append(ansibleCmd.Env, "ANSIBLE_FORCE_COLOR=True")
 	if ansibleCfgPath != "" {
