@@ -11,6 +11,7 @@ import (
 	"github.com/dereulenspiegel/anvil/plugin/apis"
 	"github.com/dereulenspiegel/anvil/util"
 	"github.com/ryanfaerman/fsm"
+	"github.com/ttacon/chalk"
 )
 
 const (
@@ -169,6 +170,7 @@ func (t *TestCase) SetState(s fsm.State) {
 }
 
 func (t *TestCase) setup() {
+	fmt.Printf("%sSetting up %s%s\n", chalk.Bold, t.Name, chalk.Reset)
 	instance, err := t.driver.CreateInstance(t.Name, t.platform.Driver)
 	if err != nil {
 		t.lastError = err
@@ -187,6 +189,7 @@ func (t *TestCase) setup() {
 }
 
 func (t *TestCase) provision() {
+	fmt.Printf("%sProvisioning %s%s\n", chalk.Bold, t.Name, chalk.Reset)
 	err := t.provisioner.Provision(t.Instance, t.suite.Provisioner)
 	if err != nil {
 		t.State = FAILED
@@ -209,6 +212,7 @@ func (t *TestCase) verify() {
 		t.lastError = err
 		return
 	}
+	fmt.Printf("%sVerifying %s%s\n", chalk.Bold, t.Name, chalk.Reset)
 	for _, file := range files {
 		if file.IsDir() {
 			result, err := t.verifyUsingVerifier(file.Name())
@@ -238,7 +242,7 @@ func (t *TestCase) verifyUsingVerifier(name string) (apis.VerifyResult, error) {
 }
 
 func (t *TestCase) destroy() {
-	log.Printf("Destroying instance %s", t.Instance.Name)
+	fmt.Printf("%sDestroying %s%s\n", chalk.Bold, t.Name, chalk.Reset)
 	instance, err := t.driver.DestroyInstance(t.Instance.Name)
 	if err != nil {
 		t.lastError = err
