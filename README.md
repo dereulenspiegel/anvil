@@ -20,11 +20,11 @@ you write your own JSON-RPC library).
 * [x] Driver plugin for vagrant
 * [x] Provisioner plugin for ansible
 * [x] Verifier plugin for testinfra
-* [] Plugin interface for test report formatters (if this makes sense, tbd)
-* [] Plugin interface for notifier (for these long running tests)
-* [] Let multiple test suites run in parallel
-* [] More plugins for more drivers, provisioners and verifiers
-* [] Easier plugin installation and management
+* [ ] Plugin interface for test report formatters (if this makes sense, tbd)
+* [ ] Plugin interface for notifier (for these long running tests)
+* [ ] Let multiple test suites run in parallel
+* [ ] More plugins for more drivers, provisioners and verifiers
+* [ ] Easier plugin installation and management
 
 ## Installation
 
