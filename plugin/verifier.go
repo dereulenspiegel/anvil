@@ -16,6 +16,8 @@ type VerifierPlugin struct {
 	rpcClient *rpc.Client
 }
 
+var verifier *VerifierPlugin
+
 func (d *VerifierPlugin) mustCall(method string, args interface{}, reply interface{}) {
 	mustCall(d.rpcClient, fmt.Sprintf("Verifier.%s", method), args, reply)
 }
@@ -37,10 +39,13 @@ func (v *VerifierPlugin) Verify(inst apis.Instance, suite *config.SuiteConfig) (
 }
 
 func LoadVerifier(name string) *VerifierPlugin {
-	driverPath := fmt.Sprintf("anvil-verifier-%s", name)
-	client, err := pie.StartProviderCodec(jsonrpc.NewClientCodec, os.Stderr, driverPath)
-	if err != nil {
-		log.Fatalf("Can't load verifier %s", name)
+	if verifier == nil {
+		driverPath := fmt.Sprintf("anvil-verifier-%s", name)
+		client, err := pie.StartProviderCodec(jsonrpc.NewClientCodec, os.Stderr, driverPath)
+		if err != nil {
+			log.Fatalf("Can't load verifier %s", name)
+		}
+		verifier = &VerifierPlugin{client}
 	}
-	return &VerifierPlugin{client}
+	return verifier
 }

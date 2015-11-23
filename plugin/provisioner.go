@@ -15,6 +15,8 @@ type ProvisionerPlugin struct {
 	rpcClient *rpc.Client
 }
 
+var provisioner *ProvisionerPlugin
+
 func (p *ProvisionerPlugin) mustCall(method string, args interface{}, reply interface{}) {
 	mustCall(p.rpcClient, fmt.Sprintf("Provisioner.%s", method), args, reply)
 }
@@ -30,11 +32,18 @@ func (p *ProvisionerPlugin) Provision(inst apis.Instance, opts map[string]interf
 	}, nil)
 }
 
+func (p *ProvisionerPlugin) Init(opts map[string]interface{}) error {
+	return p.call("Init", opts, nil)
+}
+
 func LoadProvisioner(name string) *ProvisionerPlugin {
-	driverPath := fmt.Sprintf("anvil-provisioner-%s", name)
-	client, err := pie.StartProviderCodec(jsonrpc.NewClientCodec, os.Stderr, driverPath)
-	if err != nil {
-		log.Fatalf("Can't load provisioner %s", name)
+	if provisioner == nil {
+		driverPath := fmt.Sprintf("anvil-provisioner-%s", name)
+		client, err := pie.StartProviderCodec(jsonrpc.NewClientCodec, os.Stderr, driverPath)
+		if err != nil {
+			log.Fatalf("Can't load provisioner %s", name)
+		}
+		provisioner = &ProvisionerPlugin{client}
 	}
-	return &ProvisionerPlugin{client}
+	return provisioner
 }
