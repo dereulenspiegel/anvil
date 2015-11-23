@@ -13,6 +13,9 @@ type AnvilCommand func(cases []*test.TestCase, ctx *cli.Context)
 
 func AnvilAction(command AnvilCommand) func(*cli.Context) {
 	return func(ctx *cli.Context) {
+		configPath := ctx.GlobalString("config")
+		config.LoadConfig(configPath)
+
 		testCases := GetTestCases(ctx)
 
 		if !ctx.GlobalBool("no-refresh") {

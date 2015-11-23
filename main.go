@@ -43,12 +43,6 @@ func createSubCommands(app *cli.App) {
 	verify.BuildCommand(app)
 }
 
-func before(ctx *cli.Context) error {
-	configPath := ctx.GlobalString("config")
-	config.LoadConfig(configPath)
-	return nil
-}
-
 func main() {
 	App = cli.NewApp()
 	App.Flags = createFlags()
@@ -58,7 +52,6 @@ func main() {
 	App.Version = "0.0.1-alpha"
 	App.Usage = "Forge your infrastructure"
 	createSubCommands(App)
-	App.Before = before
 
 	App.Run(os.Args)
 }
