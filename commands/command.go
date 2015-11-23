@@ -14,10 +14,15 @@ type AnvilCommand func(cases []*test.TestCase, ctx *cli.Context)
 func AnvilAction(command AnvilCommand) func(*cli.Context) {
 	return func(ctx *cli.Context) {
 		testCases := GetTestCases(ctx)
-		for _, tc := range testCases {
-			tc.UpdateState()
+
+		if !ctx.GlobalBool("no-refresh") {
+			for _, tc := range testCases {
+				tc.UpdateState()
+			}
 		}
+
 		command(testCases, ctx)
+
 		for _, tc := range testCases {
 			tc.PersistState()
 		}

@@ -24,8 +24,14 @@ func createFlags() []cli.Flag {
 		EnvVar: "ANVIL_YAML",
 	}
 
+	updateFlag := cli.BoolFlag{
+		Name:   "no-refresh,n",
+		Usage:  "Trust state in local cache and do not update it from driver each run",
+		EnvVar: "ANVIL_NO_REFRESH",
+	}
+
 	flags := make([]cli.Flag, 0, 5)
-	flags = append(flags, configFlag)
+	flags = append(flags, configFlag, updateFlag)
 	return flags
 }
 
@@ -38,7 +44,7 @@ func createSubCommands(app *cli.App) {
 }
 
 func before(ctx *cli.Context) error {
-	configPath := ctx.String("config")
+	configPath := ctx.GlobalString("config")
 	config.LoadConfig(configPath)
 	return nil
 }
