@@ -20,6 +20,7 @@ you write your own JSON-RPC library).
 * [x] Driver plugin for vagrant
 * [x] Provisioner plugin for ansible
 * [x] Verifier plugin for testinfra
+* [x] The .anvil.yml configuration file can be templated like a golang text/template
 * [ ] Plugin interface for test report formatters (if this makes sense, tbd)
 * [ ] Plugin interface for notifier (for these long running tests)
 * [ ] Let multiple test suites run in parallel
