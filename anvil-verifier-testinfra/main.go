@@ -85,7 +85,6 @@ func executeTestinfraFile(testFileName string, inst apis.Instance) error {
 	params = append(params, connParams...)
 	params = append(params, testFileName)
 	testinfraCmd := exec.Command("testinfra", params...)
-	apis.Logf("Executing testinfra with %v", *testinfraCmd)
 	testinfraCmd.Stdout = os.Stderr
 	testinfraCmd.Stderr = os.Stderr
 	err = testinfraCmd.Start()
