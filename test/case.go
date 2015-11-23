@@ -68,16 +68,20 @@ func NewTestCase(platform *config.PlatformConfig, suite *config.SuiteConfig) *Te
 	testCase.LoadState()
 	testCase.driver = plugin.LoadDriver(config.Cfg.Driver.Name)
 	testCase.provisioner = plugin.LoadProvisioner(config.Cfg.Provisioner.Name)
-	instance, err := testCase.driver.UpdateState(testCase.Name)
+
+	return testCase
+}
+
+func (t *TestCase) UpdateState() {
+	instance, err := t.driver.UpdateState(t.Name)
 	if err == nil {
-		testCase.Instance = instance
-		if instance.State == apis.STARTED && testCase.State == DESTROYED {
-			testCase.State = SETUP
+		t.Instance = instance
+		if instance.State == apis.STARTED && t.State == DESTROYED {
+			t.State = SETUP
 		}
 	} else {
 		log.Fatalf("Got error when udpating state: %v", err)
 	}
-	return testCase
 }
 
 func (t *TestCase) Transition(s fsm.State) error {
