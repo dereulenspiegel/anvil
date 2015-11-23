@@ -23,8 +23,11 @@ type DriverWrapper struct {
 
 // Result is not used here
 func (d *DriverWrapper) Init(params RpcParams, result *string) error {
-	err := d.impl.Init(params["options"].(map[string]interface{}))
-	return err
+	opts, exist := params["options"]
+	if exist && opts != nil {
+		return d.impl.Init(opts.(map[string]interface{}))
+	}
+	return nil
 }
 
 func (d *DriverWrapper) CreateInstance(params RpcParams, result *DriverPluginResults) error {

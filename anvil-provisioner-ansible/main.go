@@ -34,6 +34,11 @@ func (a *AnsibleProvisioner) Provision(inst apis.Instance, opts map[string]inter
 	return err
 }
 
+func (a *AnsibleProvisioner) Init(opts map[string]interface{}) error {
+	// Currently just here for interface compliance
+	return nil
+}
+
 var (
 	mappedSshParams = map[string]string{
 		"HostName":     "ansible_ssh_host",
