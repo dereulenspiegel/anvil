@@ -5,6 +5,12 @@ import (
 
 	"log"
 
+	"text/template"
+
+	"bytes"
+	"os"
+	"strings"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -40,17 +46,46 @@ type Config struct {
 	Suites      []*SuiteConfig
 }
 
+type configVars struct {
+	Env map[string]string
+}
+
+func buildConfigVars() configVars {
+	vars := configVars{
+		Env: make(map[string]string),
+	}
+	for _, envVar := range os.Environ() {
+		parts := strings.Split(envVar, "=")
+		if len(parts) == 2 {
+			vars.Env[parts[0]] = parts[1]
+		}
+	}
+	return vars
+}
+
 func readConfig(configPath string) *Config {
+	configTemplate := template.New("config")
+
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		log.Fatalf("Can't open config file %s", configPath)
 	}
+	configTemplate, err = configTemplate.Parse(string(data))
+	if err != nil {
+		log.Fatalf("Can't parse config template: %v")
+	}
+	buffer := bytes.NewBuffer(make([]byte, 0, 4096))
+	err = configTemplate.Execute(buffer, buildConfigVars())
+	if err != nil {
+		log.Fatalf("Can't template config file: %v", err)
+	}
+
 	config := &Config{}
-	err = yaml.Unmarshal(data, config)
+	err = yaml.Unmarshal(buffer.Bytes(), config)
 	if err != nil {
 		log.Fatalf("Invalid config file %s", configPath)
 	}
-
+	log.Printf("config driver options: %v", config.Driver.Options)
 	return config
 }
 
