@@ -10,6 +10,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/dereulenspiegel/anvil/config"
 	"github.com/dereulenspiegel/anvil/plugin/apis"
 	"github.com/dereulenspiegel/anvil/util"
 )
@@ -21,8 +22,8 @@ var (
 
 type TestinfraVerifier struct{}
 
-func (t *TestinfraVerifier) Verify(inst apis.Instance) (apis.VerifyResult, error) {
-	err := executeTestinfraFile(path.Join(apis.DefaultTestFolder, "testinfra"), inst)
+func (t *TestinfraVerifier) Verify(inst apis.Instance, suite *config.SuiteConfig) (apis.VerifyResult, error) {
+	err := executeTestinfraFile(path.Join(apis.DefaultTestFolder, suite.Name, "testinfra"), inst)
 	return apis.VerifyResult{true, "testinfra", "Great Success"}, err
 }
 

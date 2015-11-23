@@ -35,6 +35,7 @@ var (
 		test.VERIFIED:    chalk.Green,
 		test.PROVISIONED: chalk.Blue,
 		test.SETUP:       chalk.Blue,
+		test.FAILED:      chalk.Red,
 	}
 )
 

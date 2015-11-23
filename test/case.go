@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path"
 
 	"github.com/dereulenspiegel/anvil/config"
 	"github.com/dereulenspiegel/anvil/plugin"
 	"github.com/dereulenspiegel/anvil/plugin/apis"
+	"github.com/dereulenspiegel/anvil/util"
 	"github.com/ryanfaerman/fsm"
 )
 
@@ -185,12 +187,19 @@ func (t *TestCase) provision() {
 	if err != nil {
 		t.State = FAILED
 		t.lastError = err
+		return
 	}
 	t.State = PROVISIONED
 }
 
 func (t *TestCase) verify() {
-	files, err := ioutil.ReadDir(apis.DefaultTestFolder)
+	testPath := path.Join(apis.DefaultTestFolder, t.suite.Name)
+	if !util.FileExists(testPath) {
+		// TODO check if this makes sense. Probably state PROVSIONED is better
+		t.State = VERIFIED
+		return
+	}
+	files, err := ioutil.ReadDir(testPath)
 	if err != nil {
 		t.State = FAILED
 		t.lastError = err
@@ -208,7 +217,6 @@ func (t *TestCase) verify() {
 			}
 		}
 	}
-	// Not implemented yet
 	t.State = VERIFIED
 }
 
@@ -222,7 +230,7 @@ func (t *TestCase) printVerifyResult(result apis.VerifyResult) {
 
 func (t *TestCase) verifyUsingVerifier(name string) (apis.VerifyResult, error) {
 	verifier := plugin.LoadVerifier(name)
-	return verifier.Verify(t.Instance)
+	return verifier.Verify(t.Instance, t.suite)
 }
 
 func (t *TestCase) destroy() {

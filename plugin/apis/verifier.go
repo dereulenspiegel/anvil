@@ -3,6 +3,7 @@ package apis
 import (
 	"net/rpc/jsonrpc"
 
+	"github.com/dereulenspiegel/anvil/config"
 	"github.com/natefinch/pie"
 )
 
@@ -13,7 +14,7 @@ type VerifyResult struct {
 }
 
 type Verifier interface {
-	Verify(inst Instance) (VerifyResult, error)
+	Verify(inst Instance, suite *config.SuiteConfig) (VerifyResult, error)
 }
 
 type VerifierWrapper struct {
@@ -21,11 +22,12 @@ type VerifierWrapper struct {
 }
 
 type VerifyParams struct {
-	Inst Instance
+	Inst  Instance
+	Suite *config.SuiteConfig
 }
 
 func (v *VerifierWrapper) Verify(params VerifyParams, result *VerifyResult) error {
-	verifyResult, err := v.impl.Verify(params.Inst)
+	verifyResult, err := v.impl.Verify(params.Inst, params.Suite)
 	result.Message = verifyResult.Message
 	result.Verifier = verifyResult.Verifier
 	result.Success = verifyResult.Success
