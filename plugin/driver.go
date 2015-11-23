@@ -7,6 +7,7 @@ import (
 	"net/rpc/jsonrpc"
 	"os"
 
+	"github.com/dereulenspiegel/anvil/config"
 	"github.com/dereulenspiegel/anvil/plugin/apis"
 	"github.com/natefinch/pie"
 )
@@ -15,13 +16,19 @@ type DriverPlugin struct {
 	rpcClient *rpc.Client
 }
 
+var driver *DriverPlugin
+
 func LoadDriver(name string) *DriverPlugin {
-	driverPath := fmt.Sprintf("anvil-driver-%s", name)
-	client, err := pie.StartProviderCodec(jsonrpc.NewClientCodec, os.Stderr, driverPath)
-	if err != nil {
-		log.Fatalf("Can't load driver %s", name)
+	if driver == nil {
+		driverPath := fmt.Sprintf("anvil-driver-%s", name)
+		client, err := pie.StartProviderCodec(jsonrpc.NewClientCodec, os.Stderr, driverPath)
+		if err != nil {
+			log.Fatalf("Can't load driver %s", name)
+		}
+		driver = &DriverPlugin{client}
+		driver.Init(config.Cfg.Driver.Options)
 	}
-	return &DriverPlugin{client}
+	return driver
 }
 
 func (d *DriverPlugin) mustCall(method string, args interface{}, reply interface{}) {
