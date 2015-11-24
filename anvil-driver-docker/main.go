@@ -1,8 +1,12 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"path"
 
 	"github.com/dereulenspiegel/anvil/plugin/apis"
 	"github.com/samalba/dockerclient"
@@ -17,14 +21,104 @@ var (
 )
 
 func findContainerByName(name string) (string, error) {
-	containers, err := docker.ListContainers(true, false, fmt.Sprintf("name=%s", name))
+	containers, err := docker.ListContainers(true, false, "")
 	if err != nil {
 		return "", err
 	}
 	if len(containers) == 0 {
-		return "", fmt.Errorf("Can't find container with name %s", name)
+		return "", fmt.Errorf("Can't find container with name %s, because no containers are there", name)
 	}
-	return containers[0].Id, nil
+	for _, container := range containers {
+		for _, containerName := range container.Names {
+			containerName = containerName[1:]
+			if containerName == name {
+				return container.Id, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("Can't find container with name %s", name)
+}
+
+func createConnection(containerId string) apis.Connection {
+	conn := apis.Connection{
+		Type:   apis.Docker,
+		Config: make(map[string]interface{}),
+	}
+	conn.Config["containerId"] = containerId
+	return conn
+}
+
+func ensureImageIsAvailable(imageName string) error {
+	images, err := docker.ListImages(true)
+	if err != nil {
+		return err
+	}
+	found := false
+search:
+	for _, image := range images {
+		for _, tag := range image.RepoTags {
+			if tag == imageName {
+				found = true
+				break search
+			}
+		}
+	}
+	if !found {
+		err = docker.PullImage(imageName, &dockerclient.AuthConfig{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createTlsConfig(options map[string]interface{}) (tlsConfig *tls.Config, err error) {
+	var clientCertFile string
+	var clientKeyFile string
+	var serverCertFile string
+	if cert, exists := options["certPath"]; exists {
+		certPath := cert.(string)
+		clientCertFile = path.Join(certPath, "cert.pem")
+		clientKeyFile = path.Join(certPath, "key.pem")
+		serverCertFile = path.Join(certPath, "ca.pem")
+	} else {
+		clientCert, certExists := options["clientCert"]
+		clientKey, keyExists := options["clientKey"]
+		if !certExists || keyExists {
+			return
+		}
+		clientCertFile = clientCert.(string)
+		clientKeyFile = clientKey.(string)
+	}
+
+	clientCert, errTls := tls.LoadX509KeyPair(clientCertFile, clientKeyFile)
+	if err != nil {
+		err = errTls
+		return
+	}
+	tlsConfig = &tls.Config{
+		Certificates: make([]tls.Certificate, 1, 1),
+	}
+	tlsConfig.Certificates[0] = clientCert
+
+	if serverCert, exists := options["serverCert"]; exists {
+		serverCertFile = serverCert.(string)
+	}
+
+	if serverCertFile != "" {
+		pemData, errIo := ioutil.ReadFile(serverCertFile)
+		if errIo != nil {
+			err = errIo
+			return
+		}
+		if tlsConfig.RootCAs == nil {
+			certs := x509.NewCertPool()
+			tlsConfig.RootCAs = certs
+		}
+		tlsConfig.RootCAs.AppendCertsFromPEM(pemData)
+	}
+	tlsConfig.BuildNameToCertificate()
+	return
 }
 
 func (d *DockerDriver) Init(options map[string]interface{}) error {
@@ -32,9 +126,13 @@ func (d *DockerDriver) Init(options map[string]interface{}) error {
 	if urlParam, exists := options["url"]; exists {
 		url = urlParam.(string)
 	}
+
 	var err error
-	docker, err = dockerclient.NewDockerClient(url, nil)
-	docker.Info()
+	tlsConfig, err := createTlsConfig(options)
+	if err != nil {
+		return err
+	}
+	docker, err = dockerclient.NewDockerClient(url, tlsConfig)
 	return err
 }
 
@@ -44,6 +142,7 @@ func (d *DockerDriver) CreateInstance(name string, options map[string]interface{
 	if cmd, exists := options["command"]; exists {
 		command = cmd.(string)
 	}
+	ensureImageIsAvailable(image)
 	containerConfig := &dockerclient.ContainerConfig{
 		Image:       image,
 		Cmd:         []string{command},
@@ -68,7 +167,7 @@ func (d *DockerDriver) StartInstance(name string) (apis.Instance, error) {
 	hostConfig := &dockerclient.HostConfig{}
 	// TODO probaly make the host config configurable
 	err = docker.StartContainer(containerId, hostConfig)
-	return apis.Instance{Name: name, State: apis.STARTED}, err
+	return apis.Instance{Name: name, State: apis.STARTED, Connection: createConnection(containerId)}, err
 }
 
 func (d *DockerDriver) StopInstance(name string) (apis.Instance, error) {
@@ -121,7 +220,7 @@ func (d *DockerDriver) UpdateState(name string) (apis.Instance, error) {
 	} else {
 		apiState = apis.STOPPED
 	}
-	return apis.Instance{Name: name, State: apiState}, nil
+	return apis.Instance{Name: name, State: apiState, Connection: createConnection(containerId)}, nil
 }
 
 func main() {
