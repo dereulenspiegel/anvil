@@ -262,7 +262,7 @@ func (t *TestCase) destroy() {
 	if err != nil {
 		t.lastError = err
 		// TODO Fail or continue with other instances?
-		log.Panicf("Can't destroy instance %s", t.Instance.Name)
+		log.Fatalf("Can't destroy instance %s: %v", t.Instance.Name, err)
 	}
 	t.Instance = instance
 	t.State = DESTROYED
