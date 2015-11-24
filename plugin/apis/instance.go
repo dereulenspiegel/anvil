@@ -18,7 +18,8 @@ type Instance struct {
 type ConnectionType string
 
 const (
-	SSH ConnectionType = "SSH"
+	SSH    ConnectionType = "SSH"
+	Docker ConnectionType = "Docker"
 )
 
 type Connection struct {
