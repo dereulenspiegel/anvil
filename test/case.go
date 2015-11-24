@@ -217,16 +217,21 @@ func (t *TestCase) verify() {
 	for _, file := range files {
 		if file.IsDir() {
 			result, err := t.verifyUsingVerifier(file.Name())
-			if err != nil {
+			failed := false
+			for _, r := range result.CaseResults {
+				if !r.Success || r.ErrorMsg != "" {
+					failed = true
+				}
+			}
+			if err != nil || failed {
 				t.State = FAILED
 				t.lastError = err
-				return
 			} else {
-				t.printVerifyResult(result)
+				t.State = VERIFIED
 			}
+			t.printVerifyResult(result)
 		}
 	}
-	t.State = VERIFIED
 }
 
 func (t *TestCase) loadFormatter() apis.VerifyResultFormatter {

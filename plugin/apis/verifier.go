@@ -13,11 +13,11 @@ type VerifyResult struct {
 }
 
 type VerifyCaseResult struct {
-	Success bool
-	Name    string
-	Message string
-	Output  string
-	Error   error
+	Success  bool
+	Name     string
+	Message  string
+	Output   string
+	ErrorMsg string
 }
 
 type Verifier interface {

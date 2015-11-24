@@ -37,11 +37,11 @@ func (t *TestinfraVerifier) Verify(inst apis.Instance, suite *config.SuiteConfig
 			out, err = executeTestinfraFile(testFile, inst)
 			result := apis.VerifyCaseResult{
 				Name:   file.Name(),
-				Error:  err,
 				Output: string(out),
 			}
 			if err != nil {
 				result.Success = false
+				result.ErrorMsg = err.Error()
 				result.Message = fmt.Sprintf("Testinfra failed to verify %s", file.Name())
 			} else {
 				result.Success = true
@@ -54,7 +54,7 @@ func (t *TestinfraVerifier) Verify(inst apis.Instance, suite *config.SuiteConfig
 	return apis.VerifyResult{
 		Verifier:    "testinfra",
 		CaseResults: resultSlice,
-	}, err
+	}, nil
 }
 
 func generateConnectionParams(inst apis.Instance) ([]string, error) {
@@ -121,6 +121,7 @@ func executeTestinfraFile(testFileName string, inst apis.Instance) ([]byte, erro
 	testinfraCmd.Stderr = multiWriter
 	err = testinfraCmd.Start()
 	if err != nil {
+		apis.Logf("Error in starting testinfra: %v", err)
 		return nil, err
 	}
 	err = testinfraCmd.Wait()
