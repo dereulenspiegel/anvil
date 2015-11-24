@@ -8,9 +8,16 @@ import (
 )
 
 type VerifyResult struct {
-	Success  bool
-	Verifier string
-	Message  string
+	Verifier    string
+	CaseResults []VerifyCaseResult
+}
+
+type VerifyCaseResult struct {
+	Success bool
+	Name    string
+	Message string
+	Output  string
+	Error   error
 }
 
 type Verifier interface {
@@ -28,9 +35,8 @@ type VerifyParams struct {
 
 func (v *VerifierWrapper) Verify(params VerifyParams, result *VerifyResult) error {
 	verifyResult, err := v.impl.Verify(params.Inst, params.Suite)
-	result.Message = verifyResult.Message
 	result.Verifier = verifyResult.Verifier
-	result.Success = verifyResult.Success
+	result.CaseResults = verifyResult.CaseResults
 	return err
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"path"
 
 	"github.com/dereulenspiegel/anvil/config"
@@ -228,12 +229,21 @@ func (t *TestCase) verify() {
 	t.State = VERIFIED
 }
 
-func (t *TestCase) printVerifyResult(result apis.VerifyResult) {
-	resultString := "FAILED"
-	if result.Success {
-		resultString = "SUCCESS"
+func (t *TestCase) loadFormatter() apis.VerifyResultFormatter {
+	if config.Cfg.Formatter != nil {
+		return plugin.LoadVerifyResultFormatter(config.Cfg.Formatter.Name)
 	}
-	fmt.Printf("[%s] %s: %s", result.Verifier, resultString, result.Message)
+	return &DefaultConsoleResultFormatter{}
+}
+
+func (t *TestCase) printVerifyResult(result apis.VerifyResult) {
+	formatter := t.loadFormatter()
+	data, err := formatter.Format(result)
+	if err != nil {
+		log.Fatalf("Can't format verify results: %v", err)
+		return
+	}
+	os.Stdout.Write(data)
 }
 
 func (t *TestCase) verifyUsingVerifier(name string) (apis.VerifyResult, error) {

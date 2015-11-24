@@ -23,8 +23,35 @@ var (
 type TestinfraVerifier struct{}
 
 func (t *TestinfraVerifier) Verify(inst apis.Instance, suite *config.SuiteConfig) (apis.VerifyResult, error) {
-	err := executeTestinfraFile(path.Join(apis.DefaultTestFolder, suite.Name, "testinfra"), inst)
-	return apis.VerifyResult{true, "testinfra", "Great Success"}, err
+	testinfraTestDir := path.Join(apis.DefaultTestFolder, suite.Name, "testinfra")
+	testFiles, err := ioutil.ReadDir(testinfraTestDir)
+	if err != nil {
+		return apis.VerifyResult{}, err
+	}
+	resultSlice := make([]apis.VerifyCaseResult, 0, 10)
+	for _, file := range testFiles {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".py") {
+			testFile := path.Join(testinfraTestDir, file.Name())
+			err = executeTestinfraFile(testFile, inst)
+			result := apis.VerifyCaseResult{
+				Name:  file.Name(),
+				Error: err,
+			}
+			if err != nil {
+				result.Success = false
+				result.Message = fmt.Sprintf("Testinfra failed to verify %s", file.Name())
+			} else {
+				result.Success = true
+				result.Message = fmt.Sprintf("Testinfra successfully verified %s", file.Name())
+			}
+			resultSlice = append(resultSlice, result)
+		}
+	}
+
+	return apis.VerifyResult{
+		Verifier:    "testinfra",
+		CaseResults: resultSlice,
+	}, err
 }
 
 func generateConnectionParams(inst apis.Instance) ([]string, error) {

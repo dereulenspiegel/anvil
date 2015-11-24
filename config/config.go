@@ -39,11 +39,17 @@ type SuiteConfig struct {
 	Provisioner map[string]interface{}
 }
 
+type FormatterConfig struct {
+	Name    string
+	Options map[string]interface{}
+}
+
 type Config struct {
 	Driver      *DriverConfig
 	Provisioner *ProvisionerConfig
 	Platforms   []*PlatformConfig
 	Suites      []*SuiteConfig
+	Formatter   *FormatterConfig
 }
 
 type configVars struct {
