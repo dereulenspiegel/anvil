@@ -5,6 +5,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/dereulenspiegel/anvil/commands/destroy"
+	"github.com/dereulenspiegel/anvil/commands/login"
 	"github.com/dereulenspiegel/anvil/commands/provision"
 	"github.com/dereulenspiegel/anvil/commands/setup"
 	"github.com/dereulenspiegel/anvil/commands/status"
@@ -43,6 +44,7 @@ func createSubCommands(app *cli.App) {
 	provision.BuildCommand(app)
 	verify.BuildCommand(app)
 	testcommand.BuildCommand(app)
+	login.BuildCommand(app)
 }
 
 func main() {
