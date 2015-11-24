@@ -13,6 +13,7 @@ type Instance struct {
 	Name       string
 	State      InstanceState
 	Connection Connection
+	Tags       map[string]string
 }
 
 type ConnectionType string
