@@ -85,7 +85,6 @@ func readConfig(configPath string) *Config {
 	if err != nil {
 		log.Fatalf("Invalid config file %s", configPath)
 	}
-	log.Printf("config driver options: %v", config.Driver.Options)
 	return config
 }
 
