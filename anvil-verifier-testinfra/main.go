@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,10 +33,12 @@ func (t *TestinfraVerifier) Verify(inst apis.Instance, suite *config.SuiteConfig
 	for _, file := range testFiles {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".py") {
 			testFile := path.Join(testinfraTestDir, file.Name())
-			err = executeTestinfraFile(testFile, inst)
+			var out []byte
+			out, err = executeTestinfraFile(testFile, inst)
 			result := apis.VerifyCaseResult{
-				Name:  file.Name(),
-				Error: err,
+				Name:   file.Name(),
+				Error:  err,
+				Output: string(out),
 			}
 			if err != nil {
 				result.Success = false
@@ -101,26 +104,28 @@ func generateTempSshConfig(conn apis.Connection) (string, error) {
 	return tempSshFile.Name(), nil
 }
 
-func executeTestinfraFile(testFileName string, inst apis.Instance) error {
+func executeTestinfraFile(testFileName string, inst apis.Instance) ([]byte, error) {
 	params := make([]string, 0, 10)
 	params = append(params, "--color=yes")
 	params = append(params, "--sudo")
 	connParams, err := generateConnectionParams(inst)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	params = append(params, connParams...)
 	params = append(params, testFileName)
 	testinfraCmd := exec.Command("testinfra", params...)
-	testinfraCmd.Stdout = os.Stderr
-	testinfraCmd.Stderr = os.Stderr
+	outBuffer := bytes.NewBuffer(make([]byte, 16032))
+	multiWriter := io.MultiWriter(outBuffer)
+	testinfraCmd.Stdout = multiWriter
+	testinfraCmd.Stderr = multiWriter
 	err = testinfraCmd.Start()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = testinfraCmd.Wait()
 	removeLeftovers()
-	return err
+	return outBuffer.Bytes(), err
 }
 
 func removeLeftovers() {

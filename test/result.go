@@ -17,7 +17,8 @@ func (d *DefaultConsoleResultFormatter) Format(results apis.VerifyResult) ([]byt
 		if caseResult.Success {
 			resultString = "SUCCESS"
 		}
-		buf.WriteString(fmt.Sprintf("\t[%s] %s: %s", caseResult.Name, resultString, caseResult.Message))
+		buf.WriteString(fmt.Sprintf("\t[%s] %s: %s\n", caseResult.Name, resultString, caseResult.Message))
+		buf.WriteString(caseResult.Output)
 	}
 	return buf.Bytes(), nil
 }
