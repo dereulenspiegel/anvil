@@ -2,6 +2,7 @@ package commands
 
 import (
 	"log"
+	"os"
 	"regexp"
 
 	"github.com/codegangsta/cli"
@@ -25,9 +26,15 @@ func AnvilAction(command AnvilCommand) func(*cli.Context) {
 		}
 
 		command(testCases, ctx)
-
+		failed := false
 		for _, tc := range testCases {
 			tc.PersistState()
+			if tc.State == test.FAILED {
+				failed = true
+			}
+		}
+		if failed {
+			os.Exit(1)
 		}
 	}
 }
