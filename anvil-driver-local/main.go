@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
+	"os/exec"
 
 	"github.com/dereulenspiegel/anvil/plugin/apis"
 )
@@ -11,48 +11,61 @@ import (
 type DummyDriver struct{}
 
 func (d *DummyDriver) Init(options map[string]interface{}) error {
-	os.Stderr.WriteString("[Dummy Driver] Init called\n")
+	// Nothing to do
 	return nil
 }
 
 func (d *DummyDriver) CreateInstance(name string, options map[string]interface{}) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Create instance %s called with options %v\n", name, options))
+	// Nothing to do
 	return apis.Instance{Name: name, State: apis.CREATED}, nil
 }
 
 func (d *DummyDriver) StartInstance(name string) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Start instance %s called\n", name))
+	// Nothing to do
 	return apis.Instance{Name: name, State: apis.STARTED}, nil
 }
 
 func (d *DummyDriver) StopInstance(name string) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Stop instance %s called\n", name))
+	// Nothing to do
 	return apis.Instance{Name: name, State: apis.STOPPED}, nil
 }
 
 func (d *DummyDriver) DestroyInstance(name string) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Destroy instance %s called\n", name))
+	// Nothing to do
 	return apis.Instance{Name: name, State: apis.DESTROYED}, nil
 }
 
 func (d *DummyDriver) RebootInstance(name string) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Reboot instance %s called\n", name))
+	// Nothing to do
 	return apis.Instance{Name: name, State: apis.STARTED}, nil
 }
 
 func (d *DummyDriver) ListInstances() ([]apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] List instances called\n"))
-	return make([]apis.Instance, 0, 10), nil
+	// Nothing to do
+	return make([]apis.Instance, 0, 10), fmt.Errorf("Not implemented")
 }
 
 func (d *DummyDriver) UpdateState(name string) (apis.Instance, error) {
-	os.Stderr.WriteString(fmt.Sprintf("[Dummy Driver] Updating state of %s\n", name))
-	return apis.Instance{Name: name, State: apis.DESTROYED}, nil
+	// Nothing to do
+	return apis.Instance{Name: name, State: apis.STARTED}, nil
+}
+
+func (d *DummyDriver) EnableSmartConnection(name string) (string, error) {
+	smartSock, path, err := apis.StartSmartConnection(name)
+	if err != nil {
+		return "", nil
+	}
+	localShell := exec.Command("/bin/bash")
+	localShell.Stdin = smartSock
+	localShell.Stdout = smartSock
+	err = localShell.Start()
+	// TODO verify we can do this
+	return path, err
 }
 
 func main() {
 	err := apis.RegisterDriverPlugin(&DummyDriver{})
 	if err != nil {
-		log.Panicf("Can't register Dummy Driver plugin")
+		log.Panicf("Can't register Local Driver plugin")
 	}
 }
