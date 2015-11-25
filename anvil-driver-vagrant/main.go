@@ -19,6 +19,7 @@ var (
 	statusMap = map[string]apis.InstanceState{
 		"not_created": apis.DESTROYED,
 		"running":     apis.STARTED,
+		"aborted":     apis.STOPPED,
 	}
 )
 
