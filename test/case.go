@@ -81,6 +81,9 @@ func (t *TestCase) UpdateState() {
 		if instance.State == apis.STARTED && t.State == DESTROYED {
 			t.State = SETUP
 		}
+		if instance.State == apis.DESTROYED && t.State != DESTROYED {
+			t.State = DESTROYED
+		}
 	} else {
 		log.Fatalf("Got error when udpating state: %v", err)
 	}
